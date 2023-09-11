@@ -1,0 +1,55 @@
+version : "3.7"
+networks:
+  my-network:
+services:
+  mqtt_broker:
+    image : toke/mosquitto
+    command : mosquitto -v 
+    container_name: mqtt_broker
+    ports: 
+      - "1883:1883"
+    networks:
+      - my-network
+  mongodb :
+    image: mongo:latest
+    networks:
+      - my-network
+    container_name: mongodb
+    volumes:
+      - ./mongodb:/data/db 
+    ports: 
+      - "27017:27017"
+  redis:
+    image: redis
+    container_name: redis
+    volumes:
+    - ./redis_data:/data
+    ports:
+      - 6379:6379
+    networks:
+      - my-network
+  mqtt_subscriber:
+    build : 
+      context: .
+      dockerfile: Dockerfile.subscriber
+    command : python subscriber.py
+    networks:
+      - my-network
+  mqtt_publisher:
+    build : 
+      context: .
+      dockerfile: Dockerfile.publisher
+    command : python publisher.py
+    networks:
+      - my-network
+  fast_api_service:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - 8000:8000
+    networks:
+      - my-network
+
+  
